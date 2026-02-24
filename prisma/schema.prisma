@@ -1,0 +1,83 @@
+generator client {
+  provider     = "prisma-client-js"
+  moduleFormat = "commonjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model roles {
+  id    Int     @id @default(autoincrement())
+  name  role?
+  users users[]
+}
+
+model ticket_comments {
+  id         Int       @id @default(autoincrement())
+  ticket_id  Int?
+  user_id    Int?
+  comment    String
+  created_at DateTime? @default(now()) @db.Timestamp(6)
+  users      users?    @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "foriginKey5")
+  tickets    tickets?  @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "foriginKey4")
+}
+
+model ticket_status_logs {
+  id         Int       @id @default(autoincrement())
+  ticket_id  Int?
+  old_status status
+  new_status status
+  changed_by Int?
+  changed_at DateTime? @default(now()) @db.Timestamp(6)
+  users      users?    @relation(fields: [changed_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "foriginKey6")
+  tickets    tickets?  @relation(fields: [ticket_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "forign_key_to_ticket_id")
+}
+
+model tickets {
+  id                               Int                  @id @default(autoincrement())
+  title                            String               @db.VarChar(255)
+  description                      String               
+  status                           status?              @default(OPEN)
+  priority                         String?              @default("MEDIUM")
+  created_by                       Int
+  assigned_to                      Int?
+  created_at                       DateTime?            @default(dbgenerated("CURRENT_DATE")) @db.Timestamp(6)
+  ticket_comments                  ticket_comments[]
+  ticket_status_logs               ticket_status_logs[]
+  users_tickets_assigned_toTousers users?               @relation("tickets_assigned_toTousers", fields: [assigned_to], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "foriginKey3")
+  users_tickets_created_byTousers  users                @relation("tickets_created_byTousers", fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "foriginKey2")
+}
+
+model users {
+  id                                 Int                  @id @default(autoincrement())
+  name                               String               @db.VarChar(255)
+  email                              String               @unique @db.VarChar(255)
+  password                           String               @db.VarChar(255)
+  role_id                            Int
+  created_at                         DateTime?            @default(now()) @db.Timestamp(6)
+  ticket_comments                    ticket_comments[]
+  ticket_status_logs                 ticket_status_logs[]
+  tickets_tickets_assigned_toTousers tickets[]            @relation("tickets_assigned_toTousers")
+  tickets_tickets_created_byTousers  tickets[]            @relation("tickets_created_byTousers")
+  roles                              roles                @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "foriginKey1")
+}
+
+enum priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum role {
+  MANAGER
+  SUPPORT
+  USER
+}
+
+enum status {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
